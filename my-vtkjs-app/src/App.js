@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 
 import '@kitware/vtk.js/Rendering/Profiles/Geometry';
@@ -7,12 +6,12 @@ import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreen
 
 import vtkActor           from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkMapper          from '@kitware/vtk.js/Rendering/Core/Mapper';
-import vtkConeSource      from '@kitware/vtk.js/Filters/Sources/ConeSource';
+import vtkSphereSource    from '@kitware/vtk.js/Filters/Sources/SphereSource';  // Изменено на vtkSphereSource
 
 function App() {
   const vtkContainerRef = useRef(null);
   const context = useRef(null);
-  const [coneResolution, setConeResolution] = useState(6);
+  const [sphereResolution, setSphereResolution] = useState(16); // Это для сегментов долготы/широты
   const [representation, setRepresentation] = useState(2);
 
   useEffect(() => {
@@ -20,10 +19,10 @@ function App() {
       const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
         rootContainer: vtkContainerRef.current,
       });
-      const coneSource = vtkConeSource.newInstance({ height: 1.0 });
+      const sphereSource = vtkSphereSource.newInstance({ radius: 1.0, thetaResolution: sphereResolution, phiResolution: sphereResolution }); // Используем vtkSphereSource
 
       const mapper = vtkMapper.newInstance();
-      mapper.setInputConnection(coneSource.getOutputPort());
+      mapper.setInputConnection(sphereSource.getOutputPort());
 
       const actor = vtkActor.newInstance();
       actor.setMapper(mapper);
@@ -39,7 +38,7 @@ function App() {
         fullScreenRenderer,
         renderWindow,
         renderer,
-        coneSource,
+        sphereSource,  // Обновлено на sphereSource
         actor,
         mapper,
       };
@@ -47,23 +46,24 @@ function App() {
 
     return () => {
       if (context.current) {
-        const { fullScreenRenderer, coneSource, actor, mapper } = context.current;
+        const { fullScreenRenderer, sphereSource, actor, mapper } = context.current;
         actor.delete();
         mapper.delete();
-        coneSource.delete();
+        sphereSource.delete();
         fullScreenRenderer.delete();
         context.current = null;
       }
     };
-  }, [vtkContainerRef]);
+  }, [sphereResolution, vtkContainerRef]);
 
   useEffect(() => {
     if (context.current) {
-      const { coneSource, renderWindow } = context.current;
-      coneSource.setResolution(coneResolution);
+      const { sphereSource, renderWindow } = context.current;
+      sphereSource.setThetaResolution(sphereResolution); // Обновлено на thetaResolution
+      sphereSource.setPhiResolution(sphereResolution);   // Обновлено на phiResolution
       renderWindow.render();
     }
-  }, [coneResolution]);
+  }, [sphereResolution]);
 
   useEffect(() => {
     if (context.current) {
@@ -103,10 +103,10 @@ function App() {
             <td>
               <input
                 type="range"
-                min="4"
+                min="8"
                 max="80"
-                value={coneResolution}
-                onChange={(ev) => setConeResolution(Number(ev.target.value))}
+                value={sphereResolution}
+                onChange={(ev) => setSphereResolution(Number(ev.target.value))}
               />
             </td>
           </tr>
